@@ -1,14 +1,14 @@
 <?php
-    require "artifactfactory.php";
+    require "com/scorchedcode/artifacts/artifactfactory.php";
     $art = new ArtifactFactory();
 ?>
-<?php if(!isset($_GET["name"])): ?>
+<?php if(!(isset($_GET["name"]) || isset($_GET["level"]))): ?>
 <html>
 <head><title>Mod16 Artifact Helper</title>
 <link href="artifacts.css" rel="stylesheet">
 </head>
 <?php include 'header.html'; ?>
-<body background="img/egypt.jpg" style="background-size: 100%">
+<body background="img/stargate.png" style="background-size: 100%">
 <form name="artifact" action="artifacts.php" method="post">
 <b>Name:</b><select name="Names" id="Names">
 <?php foreach($art->listNames() as $name): ?>

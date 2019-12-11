@@ -4,3 +4,11 @@
     right:0px;
     font-size:10px;
 }
+
+nav {font-size: 20px !important; }
+
+body {color: lightgreen; }
+
+a:link {color: green;}
+
+a:visited {color: yellow;}

@@ -1,69 +1,17 @@
 <?php
-    require "dbobject.php";
-    class Companions extends DBObject {
-
-        public $color = array("25"=>"green", "50"=>"blue", "75"=>"purple", "100"=>"orange");
-
-        public function __construct() {
-            parent::__construct("SELECT * FROM Companions");
-
-
-        }
-
-        public function getCompanion($name) {
-            foreach($this->arrayresult as $companion) {
-                if($companion["Name"] == $name)
-                    return $companion;
-            }
-        }
-        
-        public function filterCompanions(...$filters) {
-            $resultcompanions = array();
-            foreach($this->arrayresult as $companion) {
-                $required = 0;
-                $met = 0;
-                for($x = 0; $x < 4; $x++) {
-                    if($x == 0 && $filters[$x] != "") {
-                        $required++;
-                        if(strpos($companion["Bolster Class"], $filters[$x]) !== false)
-                            $met++;
-                    }
-                    if($x == 1 && $filters[$x] != "") {
-                        $required++;
-                        if(strpos($companion["Type"], $filters[$x]) !== false)
-                            $met++;   
-                    }
-                    if($x == 2 && $filters[$x] != "") {
-                        $required++;
-                        if(strpos($companion["Enhancement Power"], $filters[$x].":") !== false)
-                            $met++;
-                    }                       
-                    if($x == 3 && is_array($filters[$x])) {
-                        $required++;
-                       foreach($filters[$x] as $cstat) {
-                           if(!(strpos($companion["Companion Stats"], $cstat) === false))
-                               $met++;
-                       }
-                    }
-               }
-                if($required == $met)
-                    $resultcompanions[$companion["Name"]] = $companion["Item level"];
-            }
-            ksort($resultcompanions);
-            return $resultcompanions;
-        }
-    }
-// int multiply(int x, int y) {} becomes - function multiply(int $x, int $y) : int {}
-$comp = new Companions();
+    require "com/scorchedcode/companions/companionfactory.php";
+    $comp = new CompanionFactory();
 ?>
-
-
+<?php if(!isset($_GET["name"])): ?>
 <html>
 <head><title>Mod16 Companion Helper</title>
 <script src="index.js"></script>
+<style>
+    nav {font-size: 20px; }
+</style>
 </head>
 <?php include 'header.html'; ?>
-<body style="background:url('img/dragon.jpg') no-repeat; background-size:100%">
+<body style="background:url('img/dragoncomp.jpg') no-repeat; background-size:100%">
 <div style="background-color:rgba(255, 255, 0, 0.6); width:100% height:9000px">
 <form name="companion" action="companions.php" method="post">
 <b>Name: </b><select onChange="disable('name')" id="Names" name="Names">
@@ -122,6 +70,7 @@ $comp = new Companions();
 <input type="checkbox" name="bonus[]" value="Deflection" disabled>Deflection
 <input type="checkbox" name="bonus[]" value="Hit Points" disabled>Hit Points
 <input type="checkbox" name="bonus[]" value="Incoming Healing" disabled>Incoming Healing
+<input type="checkbox" name="bonus[]" value="Outgoing Healing" disabled>Outgoing Healing
 <input type="checkbox" name="bonus[]" value="Movement" disabled>Movement<br />
 <input type="checkbox" name="bonus[]" value="Power" disabled>Power
 <input type="checkbox" name="bonus[]" value="Stamina" disabled>Stamina
@@ -143,21 +92,31 @@ $comp = new Companions();
 <?php endforeach; ?>
 </ul>
 <?php else: ?>
-<?php
-    $lookupcompanion = $comp->getCompanion($_POST["Names"]);
-    $img = ($lookupcompanion["Picture"] == null) ? "img/coming-soon-icon.png" : "data:image/png;base64, ".base64_encode($lookupcompanion["Picture"]);
-?>
+<?php $lookupcompanion = $comp->getCompanion($_POST["Names"]);?>
 <fieldset style="display:inline;">
-<legend><h3><i><font color="<?= $comp->color[$lookupcompanion["Item level"]]."\">".$_POST["Names"]." [".$lookupcompanion["Bolster Class"]; ?>]</font></i></h3></legend>
-<p align="right"><i><b><?= $lookupcompanion["Type"]; ?></b></i></p>
-<img style="position:relative; object-fit:contain; height:100px; width:100px;" src="<?=$img; ?>">
+<legend><h3><i><font color="<?= $comp->color[$lookupcompanion->getLevel()]."\">".$lookupcompanion->getName()." [".$lookupcompanion->getBolster(); ?>]</font></i></h3></legend>
+<p align="right"><i><b><?= $lookupcompanion->getType(); ?></b></i></p>
+<img style="position:relative; object-fit:contain; height:100px; width:100px;" src="<?=$lookupcompanion->getPicture(); ?>">
 <h4><u>Enhancement Power:</u></h4>
-<i><font size="3"><b><?= $lookupcompanion["Enhancement Power"]; ?></font></b></i>
-<h4><u>Player Bonus Power:</u></h4>
-<i><font size="3"><b><?= $lookupcompanion["Player Bonus Power"]; ?></b></font></i>
+    <i><font size="3"><b><?= $lookupcompanion->getPower(); ?></b></font></i>
+<h4><u>Equip Power:</u></h4>
+<i><font size="3"><b><?= $lookupcompanion->getBonus(); ?></b></font></i>
+<h4><u>Summon Powers:</u></h4>
+<i><font size="3"><b><?= $lookupcompanion->getSummonPower(); ?></b></font></i>
+
 </fieldset>
 <?php endif; ?>
 <?php endif; ?>
 </div>
 </body>
 </html>
+<?php else: ?>
+<?php header('Content-Type: application/json');
+$lookupcompanion= $comp->getCompanion($_GET["name"]);
+if($lookupcompanion != null)
+    echo json_encode(["status" => 200, "message" => $lookupcompanion]);
+else
+    echo json_encode(["status" => 400, "message" => "Bad Request"]);
+exit();
+?>
+<?php endif; ?>
